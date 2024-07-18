@@ -92,21 +92,91 @@ func toKV(kv *KeyValue) *mvccpb.KeyValue {
 	}
 }
 
+// func (k *KVServerBridge) Put(ctx context.Context, r *etcdserverpb.PutRequest) (*etcdserverpb.PutResponse, error) {
+// 	return nil, unsupported("put")
+// }
+
+// func (k *KVServerBridge) DeleteRange(ctx context.Context, r *etcdserverpb.DeleteRangeRequest) (*etcdserverpb.DeleteRangeResponse, error) {
+// 	return nil, unsupported("delete")
+// }
+
 func (k *KVServerBridge) Put(ctx context.Context, r *etcdserverpb.PutRequest) (*etcdserverpb.PutResponse, error) {
-	return nil, unsupported("put")
+	resp, err := k.limited.Put(ctx, r)
+	if err != nil {
+		logrus.Errorf("error while putting key %s: %v", r.Key, err)
+		return nil, err
+	}
+
+	putResponse := &etcdserverpb.PutResponse{
+		Header: resp.Header,
+		PrevKv: resp.PrevKv,
+	}
+
+	return putResponse, nil
 }
 
 func (k *KVServerBridge) DeleteRange(ctx context.Context, r *etcdserverpb.DeleteRangeRequest) (*etcdserverpb.DeleteRangeResponse, error) {
-	return nil, unsupported("delete")
+	resp, err := k.limited.DeleteRange(ctx, r)
+	if err != nil {
+		logrus.Errorf("error while deleting range %s %s: %v", r.Key, r.RangeEnd, err)
+		return nil, err
+	}
+
+	deleteResponse := &etcdserverpb.DeleteRangeResponse{
+		Header: resp.Header,
+		Deleted: resp.Deleted,
+		PrevKvs: resp.PrevKvs,
+	}
+
+	return deleteResponse, nil
 }
 
+// func (k *KVServerBridge) Txn(ctx context.Context, r *etcdserverpb.TxnRequest) (*etcdserverpb.TxnResponse, error) {
+// 	res, err := k.limited.Txn(ctx, r)
+// 	if err != nil {
+// 		logrus.Errorf("error in txn %s: %v", r, err)
+// 	}
+// 	return res, err
+// }
+
 func (k *KVServerBridge) Txn(ctx context.Context, r *etcdserverpb.TxnRequest) (*etcdserverpb.TxnResponse, error) {
-	res, err := k.limited.Txn(ctx, r)
-	if err != nil {
-		logrus.Errorf("error in txn %s: %v", r, err)
-	}
-	return res, err
+    for _, c := range r.Compare {
+        if c.Target == etcdserverpb.Compare_VALUE {
+            return nil, unsupported("compare.Value")
+        }
+        if c.Target == etcdserverpb.Compare_CREATE {
+            return nil, unsupported("compare.Create")
+        }
+        if c.Target == etcdserverpb.Compare_MOD {
+            return nil, unsupported("compare.Mod")
+        }
+    }
+
+    for _, op := range r.Success {
+        if op.GetRequestPut() != nil {
+            return nil, unsupported("txn.Success.Put")
+        }
+        if op.GetRequestDeleteRange() != nil {
+            return nil, unsupported("txn.Success.DeleteRange")
+        }
+    }
+
+    for _, op := range r.Failure {
+        if op.GetRequestPut() != nil {
+            return nil, unsupported("txn.Failure.Put")
+        }
+        if op.GetRequestDeleteRange() != nil {
+            return nil, unsupported("txn.Failure.DeleteRange")
+        }
+    }
+
+    res, err := k.limited.Txn(ctx, r)
+    if err != nil {
+        logrus.Errorf("error in txn %s: %v", r, err)
+    }
+    return res, err
 }
+
 
 func (k *KVServerBridge) Compact(ctx context.Context, r *etcdserverpb.CompactionRequest) (*etcdserverpb.CompactionResponse, error) {
 	res, err := k.limited.Compact(ctx, r)

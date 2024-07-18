@@ -18,6 +18,20 @@ type BackendLogger struct {
 	threshold time.Duration
 }
 
+func (b *BackendLogger) DeleteRange(ctx context.Context, startKey, endKey []byte) error {
+	start := time.Now()
+	err := b.backend.DeleteRange(ctx, startKey, endKey)
+	b.logMethod(time.Since(start), "DeleteRange", startKey, endKey, err)
+	return err
+}
+
+func (b *BackendLogger) Put(ctx context.Context, key []byte, value []byte) error {
+	start := time.Now()
+	err := b.backend.Put(ctx, key, value)
+	b.logMethod(time.Since(start), "Put", key, value, err)
+	return err
+}
+
 func (b *BackendLogger) logMethod(dur time.Duration, str string, args ...any) {
 	if dur > b.threshold {
 		b.logger.Warnf(str, args...)

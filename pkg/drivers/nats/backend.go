@@ -432,3 +432,62 @@ func (b *Backend) Watch(ctx context.Context, prefix string, startRevision int64)
 func (b *Backend) Compact(ctx context.Context, revision int64) (int64, error) {
 	return revision, nil
 }
+
+func (b *Backend) DeleteRange(ctx context.Context, startKey, endKey []byte) error {
+	entries, err := b.kv.List(ctx, string(startKey), string(endKey), 0, 0)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		if err := b.kv.Delete(ctx, entry.Key()); err != nil {
+			b.l.Warnf("Failed to delete key %s: %v", entry.Key(), err)
+		}
+	}
+
+	return nil
+}
+
+
+func (b *Backend) Put(ctx context.Context, key []byte, value []byte) error {
+	rev, pnv, err := b.get(ctx, string(key), 0, true)
+	if err != nil && err != jetstream.ErrKeyNotFound {
+		return err
+	}
+
+	nv := natsData{
+		Delete:       false,
+		Create:       true,
+		PrevRevision: 0,
+		KV: &server.KeyValue{
+			Key:            string(key),
+			CreateRevision: 0,
+			ModRevision:    0,
+			Value:          value,
+			Lease:          0, // Lease is not used in the new Put method signature
+		},
+	}
+
+	if pnv != nil {
+		nv.PrevRevision = pnv.KV.ModRevision
+	}
+
+	data, err := nv.Encode()
+	if err != nil {
+		return err
+	}
+
+	if pnv != nil {
+		_, err := b.kv.Update(ctx, string(key), data, uint64(rev))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	_, err = b.kv.Create(ctx, string(key), data)
+	if err != nil {
+		return err
+	}
+	return nil
+}

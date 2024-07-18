@@ -242,3 +242,7 @@ func parseOpts(dsn string) (opts, error) {
 
 	return result, nil
 }
+
+func (b *Backend) DeleteRange(ctx context.Context, startKey, endKey []byte) error {
+	return server.ErrNotSupported
+}

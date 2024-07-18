@@ -29,6 +29,8 @@ type Backend interface {
 	DbSize(ctx context.Context) (int64, error)
 	CurrentRevision(ctx context.Context) (int64, error)
 	Compact(ctx context.Context, revision int64) (int64, error)
+	Put(ctx context.Context, key, value []byte) error
+	DeleteRange(ctx context.Context, startKey, endKey []byte) error
 }
 
 type Dialect interface {

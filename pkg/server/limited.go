@@ -20,6 +20,30 @@ func (l *LimitedServer) Range(ctx context.Context, r *etcdserverpb.RangeRequest)
 	return l.list(ctx, r)
 }
 
+// Put method to store a key-value pair.
+func (l *LimitedServer) Put(ctx context.Context, r *etcdserverpb.PutRequest) (*etcdserverpb.PutResponse, error) {
+	err := l.backend.Put(ctx, r.Key, r.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &etcdserverpb.PutResponse{
+		Header: txnHeader(0), // Replace 0 with appropriate revision number
+	}, nil
+}
+
+// DeleteRange method to delete a range of key-value pairs.
+func (l *LimitedServer) DeleteRange(ctx context.Context, r *etcdserverpb.DeleteRangeRequest) (*etcdserverpb.DeleteRangeResponse, error) {
+	err := l.backend.DeleteRange(ctx, r.Key, r.RangeEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	return &etcdserverpb.DeleteRangeResponse{
+		Header: txnHeader(0), // Replace 0 with appropriate revision number
+	}, nil
+}
+
 func txnHeader(rev int64) *etcdserverpb.ResponseHeader {
 	return &etcdserverpb.ResponseHeader{
 		Revision: rev,

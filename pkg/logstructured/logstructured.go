@@ -45,6 +45,35 @@ func New(log Log) *LogStructured {
 	}
 }
 
+func (l *LogStructured) DeleteRange(ctx context.Context, startKey, endKey []byte) error {
+	_, events, err := l.log.List(ctx, string(startKey), string(endKey), 0, 0, false)
+	if err != nil {
+		return err
+	}
+
+	for _, event := range events {
+		_, _, _, err := l.Delete(ctx, event.KV.Key, 0)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (l *LogStructured) Put(ctx context.Context, key []byte, value []byte) error {
+	event := &server.Event{
+		Create: true,
+		KV: &server.KeyValue{
+			Key:   string(key),
+			Value: value,
+		},
+	}
+
+	_, err := l.log.Append(ctx, event)
+	return err
+}
+
 func (l *LogStructured) Start(ctx context.Context) error {
 	if err := l.log.Start(ctx); err != nil {
 		return err
