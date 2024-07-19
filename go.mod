@@ -1,4 +1,4 @@
-module github.com/k3s-io/kine
+module github.com/ggiallo28/kine
 
 go 1.21
 
