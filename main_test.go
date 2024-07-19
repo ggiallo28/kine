@@ -15,10 +15,10 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/exp/maps"
 
-	"github.com/milvus-io/milvus/pkg/kv/predicates"
-	"github.com/milvus-io/milvus/pkg/util/etcd"
-	"github.com/milvus-io/milvus/pkg/util/funcutil"
-	"github.com/milvus-io/milvus/pkg/util/paramtable"
+	"github.com/ggiallo28/kine/pkg/util/predicates"
+	"github.com/ggiallo28/kine/pkg/util/etcd"
+	"github.com/ggiallo28/kine/pkg/util/funcutil"
+	"github.com/ggiallo28/kine/pkg/util/paramtable"
 )
 
 var Params = paramtable.Get()
